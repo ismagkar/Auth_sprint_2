@@ -1,0 +1,112 @@
+import uuid
+from datetime import datetime
+from functools import lru_cache
+from typing import Any
+
+from async_fastapi_jwt_auth import AuthJWT
+from fastapi import Depends
+from redis.asyncio import Redis
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from core.jwt_config import setting_jwt
+from db.postgres import get_async_session
+from db.redis import get_redis
+from db.role_repository import RoleRepository
+from db.user_repository import UserRepository, get_user_repository
+from models.entities import Role, RoleName, User, UserHistory
+
+
+class FakeEmailClient:
+    def __init__(self) -> None:
+        self.send_count = 0
+
+    def send(self, *args, **kwargs):
+        self.send_count += 1
+
+
+class PasswordNotEqual(Exception):
+    pass
+
+
+class AuthService:
+    def __init__(
+        self,
+        user_repo: UserRepository,
+        role_repository: RoleRepository,
+        email_client: FakeEmailClient,
+        redis: Redis,
+    ) -> None:
+        self._user_repo = user_repo
+        self._role_repository = role_repository
+        self._email_client = email_client
+        self._redis = redis
+
+    async def sign_up(self, email: str, password: str) -> User:
+        registered_role = await self._role_repository.get_role_by_name(RoleName.REGISTERED)
+        user = await self._user_repo.create(
+            user=User(
+                email=email,
+                password=generate_password_hash(password),
+                roles=[registered_role],
+            ),
+        )
+        self._email_client.send(email=user.email)
+        return user
+
+    async def sign_in(self, email: str, password: str, auth_data: dict[str, Any]) -> User:
+        user = await self._user_repo.get_user_by_email(email=email)
+        if not check_password_hash(user.password, password):
+            raise PasswordNotEqual("Passwords not equal")
+
+        user.user_history.append(UserHistory(last_login_datetime=datetime.now(), device=auth_data["device"]))
+        user = await self._user_repo.update(user)
+
+        return user
+
+    async def change_password(self, user_id: uuid.UUID, old_password: str, new_password: str) -> User:
+        user = await self._user_repo.get_user_by_id(id_=user_id)
+        if not check_password_hash(user.password, old_password):
+            raise PasswordNotEqual("Old password not equal")
+
+        user.password = generate_password_hash(new_password)
+        user = await self._user_repo.update(user)
+
+        self._email_client.send(user.email)
+
+        return user
+
+    async def create_both_tokens(self, authorize: AuthJWT, user_id: str) -> (str, str):
+        user = await self._user_repo.get_user_by_id(uuid.UUID(user_id))
+        roles = [role.name.value for role in user.roles]
+        access_token = await authorize.create_access_token(subject=user_id, user_claims=dict(roles=roles))
+        access_jti = await authorize.get_jti(access_token)
+
+        refresh_token = await authorize.create_refresh_token(
+            subject=user_id, user_claims={"access_jti": access_jti, "roles": roles}
+        )
+
+        # await authorize.set_access_cookies(access_token)
+        # await authorize.set_refresh_cookies(refresh_token)
+
+        return access_token, refresh_token
+
+    async def revoke_both_tokens(self, authorize: AuthJWT) -> None:
+        refresh_jti = (await authorize.get_raw_jwt())["jti"]
+        access_jti = (await authorize.get_raw_jwt())["access_jti"]
+        await self._redis.setex(access_jti, setting_jwt.access_expires, "true")
+        await self._redis.setex(refresh_jti, setting_jwt.refresh_expires, "true")
+        # await authorize.unset_jwt_cookies()
+
+
+@lru_cache()
+def get_role_repository(session=Depends(get_async_session)) -> RoleRepository:
+    return RoleRepository(session)
+
+
+@lru_cache()
+def get_auth_service(
+    user_repository: UserRepository = Depends(get_user_repository),
+    role_repossitory: RoleRepository = Depends(get_role_repository),
+    redis: Redis = Depends(get_redis),
+) -> AuthService:
+    return AuthService(user_repository, role_repossitory, FakeEmailClient(), redis)
