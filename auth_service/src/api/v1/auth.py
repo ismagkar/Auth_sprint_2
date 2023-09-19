@@ -14,7 +14,11 @@ from utils.jwt_checker import auth_required
 
 router = APIRouter()
 
-PASSWORD_REGEX = r"^(?=.*[0-9].*)(?=.*[a-z].*)(?=.*[A-Z].*)[0-9a-zA-Z]{8,}$"
+# https://stackoverflow.com/questions/2990654/how-to-test-a-regex-password-in-python
+PASSWORD_REGEX = r"[A-Za-z0-9@#$%^&+=]{8,}"
+
+# Регулярные выражения с positive lookahead (?=) больше не поддерживаются
+# PASSWORD_REGEX = r"^(?=.*[0-9].*)(?=.*[a-z].*)(?=.*[A-Z].*)[0-9a-zA-Z]{8,}$"
 # 1. (?=.*[0-9]) - строка содержит хотя бы одно число;
 # 2. (?=.*[a-z]) - строка содержит хотя бы одну латинскую букву в нижнем регистре;
 # 3. (?=.*[A-Z]) - строка содержит хотя бы одну латинскую букву в верхнем регистре;
