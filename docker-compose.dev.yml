@@ -1,15 +1,47 @@
-version: '3'
+version: '3.8'
 services:
   db:
+    image: postgres:13.0-alpine
+    container_name: db
+    restart: always
+    expose:
+      - "5432"
+    volumes:
+      - data_volume:/var/lib/postgresql/data/
+    env_file:
+      - environments/postgres.env
+      - ${PG_LOCAL_ENV_FILE:-environments/noop.env}
+    user: ${POSTGRES_USER:-postgres}
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     ports:
       - 5432:5432
 
   redis:
+    image: redis:6.2-alpine
+    container_name: redis
+    restart: always
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     ports:
       - 6379:6379
 
-  auth_service:
-    volumes:
-      - ./auth_service/src:/opt/app/
-    ports:
-      - 8080:8080
+#  auth_service:
+#    volumes:
+#      - ./auth_service/src:/opt/app/
+#    ports:
+#      - 8080:8080
+
+volumes:
+  data_volume:
+  redis_data:
