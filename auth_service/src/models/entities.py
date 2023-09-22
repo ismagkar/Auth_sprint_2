@@ -4,7 +4,7 @@ import datetime
 import enum
 import uuid
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, desc, func
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, desc, func, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -90,3 +90,20 @@ class UserHistory(Base):
             "last_login_datetime": str(self.last_login_datetime),
             "device": self.device,
         }
+
+
+class SocialAccount(Base):
+    __tablename__ = "social_account"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, nullable=False, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user: Mapped["User"] = relationship(back_populates="social_account")
+
+    social_id = Mapped[str] = mapped_column(String, nullable=False)
+    social_name = Mapped[str] = mapped_column(String, nullable=False)
+
+    __table_args__ = (UniqueConstraint('social_id', 'social_name', name='social_pk'), )
+
+    def __repr__(self):
+        return f'<SocialAccount {self.social_name}:{self.user_id}>'
+
