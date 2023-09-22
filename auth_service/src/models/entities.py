@@ -99,8 +99,8 @@ class SocialAccount(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     user: Mapped["User"] = relationship(back_populates="social_account")
 
-    social_id = Mapped[str] = mapped_column(String, nullable=False)
-    social_name = Mapped[str] = mapped_column(String, nullable=False)
+    social_id: Mapped[str] = mapped_column(String, nullable=False)
+    social_name: Mapped[str] = mapped_column(String, nullable=False)
 
     __table_args__ = (UniqueConstraint('social_id', 'social_name', name='social_pk'), )
 
