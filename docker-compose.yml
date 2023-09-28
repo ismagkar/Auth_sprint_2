@@ -9,6 +9,7 @@ services:
       - "5432"
     volumes:
       - data_volume:/var/lib/postgresql/data/
+      - ./psql/movies_database.sql:/docker-entrypoint-initdb.d/movies_database.sql
     env_file:
       - environments/postgres.env
       - ${PG_LOCAL_ENV_FILE:-environments/noop.env}
@@ -49,6 +50,99 @@ services:
       timeout: 5s
       retries: 20
 
+
+  admin_service:
+    build: admin_service
+    container_name: admin_service
+    volumes:
+      - static_volume:/opt/app/static/
+      - media_volume:/opt/app/media/
+    env_file:
+      - environments/admin_service.env
+      - environments/db.env
+      - ${APP_LOCAL_ENV_FILE:-environments/noop.env}
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    volumes:
+      - ./etc/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./etc/configs:/etc/nginx/conf.d:ro
+      - ./data:/data/:ro
+      - static_volume:/opt/app/static/
+      - media_volume:/opt/app/media/
+    environment:
+      NGINX_SET_REAL_IPS_FROM: 192.168.1.0/24
+    depends_on:
+      - admin_service
+    ports:
+      - "80:80"
+    command: >
+      /bin/sh -c
+      "envsubst '
+      $${NGINX_SET_REAL_IPS_FROM}
+      '< /etc/nginx/nginx.conf.template
+      > /etc/nginx/nginx.conf
+      && nginx -g 'daemon off;'"
+
+
+  elasticsearch:
+    image: elasticsearch:8.6.2
+    container_name: elasticsearch
+    restart: always
+    volumes:
+      - elasticsearch_data:/opt/elasticsearch/data
+    expose:
+      - "9200"
+    env_file:
+      - environments/es_service.env
+      - ${ELASTICSEARCH_LOCAL_ENV_FILE:-environments/noop.env}
+
+  etl-service:
+    build: psql_to_es
+    container_name: etl-service
+    restart: always
+    env_file:
+      - environments/db.env
+      - environments/etl.env
+      - environments/elasticsearch.env
+      - environments/redis.env
+      - ${ETL_LOCAL_ENV_FILE:-environments/noop.env}
+    depends_on:
+      db:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+
+  film_service:
+    build:
+      context: film_service
+      target: production
+    container_name: film_service
+    restart: always
+    env_file:
+      - environments/redis.env
+      - environments/elasticsearch.env
+      - environments/film_service.env
+      - ${FAST_API_LOCAL_ENV_FILE:-environments/noop.env}
+    expose:
+      - "8888"
+    depends_on:
+      elasticsearch:
+        condition: service_started
+      redis:
+        condition: service_started
+
 volumes:
   data_volume:
+  static_volume:
+  media_volume:
+  elasticsearch_data:
   redis_data:

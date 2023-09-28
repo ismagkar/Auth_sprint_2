@@ -13,3 +13,19 @@ services:
       - ./auth_service/src:/opt/app/
     ports:
       - 8080:8080
+
+  admin_service:
+    ports:
+      - 8000:8000
+
+  elasticsearch:
+    ports:
+      - 9200:9200
+
+  film_service:
+    build:
+      target: development
+    volumes:
+      - ./film_service/src:/opt/app/
+    ports:
+      - 8888:8888

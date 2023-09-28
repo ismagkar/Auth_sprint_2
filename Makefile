@@ -4,8 +4,11 @@ migrate:
 admin:
 	docker compose exec auth_service bash -c "python scripts.py"
 
-up_dev:
+dev_up:
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 
-down_dev:
+dev_down:
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+
+create_admin:
+	docker-compose exec admin_service python manage.py createsuperuser
