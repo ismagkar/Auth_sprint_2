@@ -18,6 +18,12 @@ class RoleName(str, enum.Enum):
     TEST = "test"
 
 
+class SocialNetwork(str, enum.Enum):
+    yandex = 'yandex'
+    google = 'google'
+    vk = 'vk'
+
+
 users_roles_table = Table(
     "users_roles",
     Base.metadata,

@@ -6,6 +6,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import JSONResponse, ORJSONResponse
 from redis.asyncio import Redis
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 from api.v1 import auth, role, user, social
 from core.config import settings
@@ -29,6 +30,7 @@ app = FastAPI(
 )
 
 app.mount('/static', StaticFiles(directory='static'), name='static')
+app.add_middleware(SessionMiddleware, secret_key=settings.middleware_secret_key)
 
 @AuthJWT.load_config
 def get_config():
