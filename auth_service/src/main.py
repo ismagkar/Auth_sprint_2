@@ -5,8 +5,9 @@ from fastapi import FastAPI, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import JSONResponse, ORJSONResponse
 from redis.asyncio import Redis
+from fastapi.staticfiles import StaticFiles
 
-from api.v1 import auth, role, user
+from api.v1 import auth, role, user, social
 from core.config import settings
 from core.jwt_config import setting_jwt
 from db import redis
@@ -21,12 +22,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.project_name,
-    docs_url="/auth/api/openapi",
-    openapi_url="/auth/api/openapi.json",
+    docs_url="/api/openapi",
+    openapi_url="/api/openapi.json",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
 
+app.mount('/static', StaticFiles(directory='static'), name='static')
 
 @AuthJWT.load_config
 def get_config():
@@ -53,6 +55,8 @@ async def health_check() -> str:
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["user"])
 app.include_router(role.router, prefix="/api/v1/role", tags=["role"])
+app.include_router(social.router, prefix="/api/v1/social", tags=["social"])
+
 
 
 if __name__ == "__main__":
