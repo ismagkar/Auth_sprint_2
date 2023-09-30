@@ -5,12 +5,15 @@ from async_fastapi_jwt_auth import AuthJWT
 from fastapi import APIRouter, Depends, Header, Query
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
+from fastapi import Request
 
-from api.v1.response_schemas import FastAPIErrorResponse, FastAPIResponse, FastAPISuccessResponse
+from schemas.response_schemas import FastAPIErrorResponse, FastAPIResponse, FastAPISuccessResponse
 from db.exceptions import UserAlreadyExists, UserNotFound
 from models.entities import RoleName
 from services.auth_service import AuthService, PasswordNotEqual, get_auth_service
 from utils.jwt_checker import auth_required
+
+from extensions.limiter import limiter
 
 router = APIRouter()
 
@@ -32,14 +35,17 @@ PASSWORD_REGEX = r"[A-Za-z0-9@#$%^&+=]{8,}"
         HTTPStatus.CONFLICT: {"model": FastAPIErrorResponse},
     },
 )
+@limiter.limit('10/second')
 async def sign_up(
-    email: EmailStr,
-    password: str = Query(regex=PASSWORD_REGEX),
-    auth_service: AuthService = Depends(get_auth_service),
+        request: Request,
+        email: EmailStr,
+        password: str = Query(regex=PASSWORD_REGEX),
+        auth_service: AuthService = Depends(get_auth_service),
 ) -> FastAPIResponse:
     """Зарегистрировать пользователя
 
     Args:
+        request: объект запроса, нужен для работы лимитера запросов
         email: электронная почта пользователя
         password: пароль пользователя.
     """
@@ -58,7 +64,9 @@ async def sign_up(
         HTTPStatus.NOT_FOUND: {"model": FastAPIErrorResponse},
     },
 )
+@limiter.limit('10/second')
 async def sign_in(
+    request: Request,
     email: EmailStr,
     password: str = Query(min_length=8),
     auth_service: AuthService = Depends(get_auth_service),
@@ -68,6 +76,7 @@ async def sign_in(
     """Авторизовать пользователя
 
     Args:
+        request: объект запроса, нужен для работы лимитера запросов
         email: электронная почта пользователя
         password: пароль пользователя.
     """
@@ -93,7 +102,9 @@ async def sign_in(
     },
 )
 @auth_required([RoleName.ADMIN, RoleName.REGISTERED])
+@limiter.limit('10/second')
 async def change_password(
+    request: Request,
     user_id: UUID,
     old: str = Query(min_length=8),
     new: str = Query(regex=PASSWORD_REGEX),
@@ -103,6 +114,7 @@ async def change_password(
     """Сменить пароль пользователя
 
     Args:
+        authorize: объект запроса, нужен для работы лимитера запросов
         email: электронная почта пользователя
         old: страый пароль пользователя
         new: новый пароль пользователя
@@ -118,6 +130,7 @@ async def change_password(
 
 @router.post("/refresh/")
 async def refresh(
+    request: Request,
     authorize: AuthJWT = Depends(),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> JSONResponse:
@@ -130,7 +143,12 @@ async def refresh(
 
 
 @router.delete("/logout/")
-async def logout(authorize: AuthJWT = Depends(), auth_service: AuthService = Depends(get_auth_service)) -> JSONResponse:
+@limiter.limit('10/second')
+async def logout(
+        request: Request,
+        authorize: AuthJWT = Depends(),
+        auth_service: AuthService = Depends(get_auth_service)
+) -> JSONResponse:
     await authorize.jwt_refresh_token_required()
     await auth_service.revoke_both_tokens(authorize)
 

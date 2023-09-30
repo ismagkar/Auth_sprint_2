@@ -4,8 +4,10 @@ from uuid import UUID
 from async_fastapi_jwt_auth import AuthJWT
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
+from starlette.requests import Request
 
-from api.v1.response_schemas import FastAPIErrorResponse, FastAPIResponse, FastAPISuccessResponse
+from extensions.limiter import limiter
+from schemas.response_schemas import FastAPIErrorResponse, FastAPIResponse, FastAPISuccessResponse
 from db.exceptions import UserNotFound
 from models.entities import RoleName
 from services.exceptions import BindEmptyRoles, BindUnknownRoles
@@ -24,7 +26,9 @@ router = APIRouter()
     },
 )
 @auth_required([RoleName.ADMIN])
+@limiter.limit('10/second')
 async def bind(
+    request: Request,
     user_id: UUID,
     role_ids: list[UUID] = Query(default=[]),
     user_service: UserService = Depends(get_user_service),
@@ -33,6 +37,7 @@ async def bind(
     """Привязать пользователю роль
 
     Args:
+        request: объект запроса, нужен для работы лимитера запросов
         user_id: идентификатор пользователя
         role_ids: идентификаторы ролей
     """
@@ -51,7 +56,9 @@ async def bind(
     },
 )
 @auth_required([RoleName.ADMIN])
+@limiter.limit('10/second')
 async def history(
+    request: Request,
     user_id: UUID,
     page_size: int = Query(default=50, gt=0),
     page_number: int = Query(default=1, gt=0),
@@ -61,6 +68,7 @@ async def history(
     """Привязать пользователю роль
 
     Args:
+        request: объект запроса, нужен для работы лимитера запросов
         user_id: идентификатор пользователя
         page_size: количество записей на странице
         page_number: номер страницы
@@ -81,7 +89,9 @@ async def history(
     },
 )
 @auth_required([RoleName.ADMIN])
+@limiter.limit('10/second')
 async def users(
+    request: Request,
     page_size: int = Query(default=50, gt=0),
     page_number: int = Query(default=1, gt=0),
     user_service: UserService = Depends(get_user_service),
@@ -90,6 +100,7 @@ async def users(
     """Получить всех пользователей
 
     Args:
+        request: объект запроса, нужен для работы лимитера запросов
         page_size: количество записей на странице
         page_number: номер страницы
     """

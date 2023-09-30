@@ -1,5 +1,4 @@
 from http import HTTPStatus
-from pprint import pprint
 
 from async_fastapi_jwt_auth import AuthJWT
 from fastapi import APIRouter, Depends, Header
@@ -11,12 +10,14 @@ from core.oauth_config import oauth
 from db.exceptions import UserNotFound
 from models.entities import SocialNetwork
 from services.auth_service import AuthService, get_auth_service
+from extensions.limiter import limiter
 
 router = APIRouter()
 templates = Jinja2Templates(directory='templates')
 
 
 @router.get('/login/{social_network}')
+@limiter.limit('10/second')
 async def login_by_social(request: Request, social_network: SocialNetwork):
     client = oauth.create_client(social_network.value)
     redirect_uri = request.url_for(
@@ -26,6 +27,7 @@ async def login_by_social(request: Request, social_network: SocialNetwork):
 
 
 @router.get('/', response_class=HTMLResponse)
+@limiter.limit('1/minute')
 async def root_page(request: Request):
 
     yandex_oatuh_url = request.url_for(
@@ -34,7 +36,6 @@ async def root_page(request: Request):
     google_oatuh_url = request.url_for(
         'login_by_social', social_network=SocialNetwork.google.value)
 
-    print(yandex_oatuh_url, google_oatuh_url)
     return templates.TemplateResponse(
         'index.html',
         {
@@ -46,6 +47,7 @@ async def root_page(request: Request):
 
 
 @router.get('/callback/{social_network}')
+@limiter.limit('10/second')
 async def auth_by_social_network(
         request: Request,
         social_network: SocialNetwork,

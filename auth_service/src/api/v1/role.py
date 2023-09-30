@@ -3,9 +3,11 @@ from uuid import UUID
 
 from async_fastapi_jwt_auth import AuthJWT
 from fastapi import APIRouter, Depends, Query
+from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from api.v1.response_schemas import FastAPIErrorResponse, FastAPIResponse, FastAPISuccessResponse
+from extensions.limiter import limiter
+from schemas.response_schemas import FastAPIErrorResponse, FastAPIResponse, FastAPISuccessResponse
 from db.exceptions import RoleAlreadyExists, RoleNotAuthenticated, RoleNotFound
 from db.role_repository import RoleRepository, get_role_repository
 from models.entities import Role, RoleName
@@ -22,8 +24,12 @@ router = APIRouter()
     },
 )
 @auth_required([RoleName.ADMIN])
+@limiter.limit('10/second')
 async def create_role(
-    name: RoleName, role_repo: RoleRepository = Depends(get_role_repository), authorize: AuthJWT = Depends()
+    request: Request,
+    name: RoleName,
+    role_repo: RoleRepository = Depends(get_role_repository),
+    authorize: AuthJWT = Depends()
 ) -> FastAPIResponse:
     try:
         await role_repo.create(role=Role(name=name))
@@ -40,8 +46,12 @@ async def create_role(
     },
 )
 @auth_required([RoleName.ADMIN])
+@limiter.limit('10/second')
 async def delete_role(
-    role_id: UUID, role_repo: RoleRepository = Depends(get_role_repository), authorize: AuthJWT = Depends()
+    request: Request,
+    role_id: UUID,
+    role_repo: RoleRepository = Depends(get_role_repository),
+    authorize: AuthJWT = Depends()
 ) -> FastAPIResponse:
     try:
         await role_repo.delete(id_=role_id)
@@ -58,7 +68,9 @@ async def delete_role(
     },
 )
 @auth_required([RoleName.ADMIN])
+@limiter.limit('10/second')
 async def roles(
+    request: Request,
     page_size: int = Query(default=50, gt=0),
     page_number: int = Query(default=1, gt=0),
     role_repo: RoleRepository = Depends(get_role_repository),
@@ -81,7 +93,9 @@ async def roles(
     },
 )
 @auth_required([RoleName.ADMIN])
+@limiter.limit('10/second')
 async def get_role(
+    request: Request,
     name: RoleName | None = None,
     role_id: UUID | None = None,
     role_repo: RoleRepository = Depends(get_role_repository),
