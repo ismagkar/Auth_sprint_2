@@ -41,13 +41,15 @@ class AuthService:
         self._email_client = email_client
         self._redis = redis
 
-    async def sign_up(self, email: str, password: str) -> User:
+    async def sign_up(self, email: str, password: str, first_name: str, second_name: str) -> User:
         registered_role = await self._role_repository.get_role_by_name(RoleName.REGISTERED)
         user = await self._user_repo.create(
             user=User(
                 email=email,
                 password=generate_password_hash(password),
                 roles=[registered_role],
+                first_name=first_name,
+                second_name=second_name,
             ),
         )
         self._email_client.send(email=user.email)
@@ -96,6 +98,10 @@ class AuthService:
         await self._redis.setex(access_jti, setting_jwt.access_expires, "true")
         await self._redis.setex(refresh_jti, setting_jwt.refresh_expires, "true")
         # await authorize.unset_jwt_cookies()
+
+    async def is_registered(self, user_id: str) -> User:
+        user = await self._user_repo.get_user_by_id(uuid.UUID(user_id))
+        return user
 
 
 @lru_cache()

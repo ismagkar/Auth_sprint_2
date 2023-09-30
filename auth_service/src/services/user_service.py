@@ -33,7 +33,7 @@ class UserService:
 
         return user.user_history[offset : offset + limit]
 
-    async def all(self, limit: int, offset: int) -> User:
+    async def all(self, limit: int, offset: int) -> [User]:
         users = await self._user_repo.list(limit=limit, offset=offset)
 
         return users

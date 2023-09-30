@@ -82,6 +82,8 @@ services:
       NGINX_SET_REAL_IPS_FROM: 192.168.1.0/24
     depends_on:
       - admin_service
+      - auth_service
+      - film_service
     ports:
       - "80:80"
     command: >

@@ -57,6 +57,17 @@ CREATE TABLE IF NOT EXISTS content.person_film_work (
         ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS content.user_admin (
+    id uuid PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    last_login timestamp with time zone
+);
+
 CREATE UNIQUE INDEX film_work_person_idx ON content.person_film_work (film_work_id, person_id, role);
 CREATE UNIQUE INDEX film_work_genre_idx ON content.genre_film_work (film_work_id, genre_id);
 CREATE UNIQUE INDEX  title_creation_date_idx ON content.film_work (title, creation_date);

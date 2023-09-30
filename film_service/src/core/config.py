@@ -24,6 +24,12 @@ class BaseConfig(BaseSettings):
     host: str = Field(env="FAST_API_HOST", default="0.0.0.0")
     port: int = Field(env="FAST_API_PORT", default=8888)
 
+    host_auth: str = Field(env="AUTH_HOST", default="0.0.0.0")
+    port_auth: int = Field(env="AUTH_PORT", default=8080)
+
+    jwt_secret_key: str = Field(env="SECRET", default="secret")
+    jwt_algorithm: str = Field(env="ALGORITHM", default="secret")
+
     redis: RedisConfig = RedisConfig()
     elastic: ElasticConfig = ElasticConfig()
 

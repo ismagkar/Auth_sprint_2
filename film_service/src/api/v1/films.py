@@ -9,6 +9,7 @@ from db.exceptions import MovieNotFoundException
 from models.controller_exceptions import MovieNotFound
 from models.models import LimitOffset, Movie, MovieInfo
 from services.movie_service import MovieService, get_movie_service
+from services.auth_service import security_jwt
 
 router = APIRouter()
 
@@ -20,6 +21,7 @@ router = APIRouter()
     response_model_include={"uuid", "title", "imdb_rating"},
 )
 async def search(
+    user: Annotated[dict, Depends(security_jwt)],
     limit_offset: Annotated[LimitOffset, Depends(LimitOffset)],
     query: str = Query(min_length=1, description="Название фильма"),
     movie_service: MovieService = Depends(get_movie_service),
@@ -35,6 +37,7 @@ async def search(
     responses={HTTPStatus.NOT_FOUND: {"model": MovieNotFound}},
 )
 async def film_details(
+    user: Annotated[dict, Depends(security_jwt)],
     film_id: UUID,
     movie_service: MovieService = Depends(get_movie_service),
 ) -> Movie:
@@ -42,7 +45,7 @@ async def film_details(
     try:
         movie = await movie_service.get_movie_by_id(id_=film_id)
     except MovieNotFoundException as exc:
-        return JSONResponse(status_code=HTTPStatus.NOT_FOUND, content={"detail": exc.detail})
+            return JSONResponse(status_code=HTTPStatus.NOT_FOUND, content={"detail": exc.detail})
     return movie
 
 
@@ -52,6 +55,7 @@ async def film_details(
     response_model_by_alias=True,
 )
 async def films(
+    user: Annotated[dict, Depends(security_jwt)],
     limit_offset: Annotated[LimitOffset, Depends(LimitOffset)],
     sort: str = Query(
         default="imdb_rating",

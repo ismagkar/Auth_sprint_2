@@ -31,16 +31,20 @@ PASSWORD_REGEX = r"^(?=.*[0-9].*)(?=.*[a-z].*)(?=.*[A-Z].*)[0-9a-zA-Z]{8,}$"
 async def sign_up(
     email: EmailStr,
     password: str = Query(regex=PASSWORD_REGEX),
+    first_name: str = "",
+    second_name: str = "",
     auth_service: AuthService = Depends(get_auth_service),
 ) -> FastAPIResponse:
     """Зарегистрировать пользователя
 
     Args:
         email: электронная почта пользователя
-        password: пароль пользователя.
+        password: пароль пользователя
+        first_name: имя пользователя
+        second_name: фамилия пользователя.
     """
     try:
-        await auth_service.sign_up(email=email, password=password)
+        await auth_service.sign_up(email=email, password=password, first_name=first_name, second_name=second_name)
         return JSONResponse(status_code=HTTPStatus.OK, content={"result": "OK"})
     except UserAlreadyExists as exc:
         return JSONResponse(status_code=HTTPStatus.CONFLICT, content={"detail": str(exc)})
@@ -72,7 +76,7 @@ async def sign_in(
         access_token, refresh_token = await auth_service.create_both_tokens(authorize, str(user.id))
 
         return JSONResponse(
-            status_code=HTTPStatus.OK, content={"access_token": access_token, "refresh_token": refresh_token}
+            status_code=HTTPStatus.OK, content={"user": user.as_dict(), "access_token": access_token, "refresh_token": refresh_token}
         )
     except PasswordNotEqual as exc:
         return JSONResponse(status_code=HTTPStatus.FORBIDDEN, content={"detail": str(exc)})
@@ -122,7 +126,7 @@ async def refresh(
     await auth_service.revoke_both_tokens(authorize)
     new_access_token, refresh_token = await auth_service.create_both_tokens(authorize, current_user_id)
 
-    return JSONResponse(status_code=HTTPStatus.OK, content={"refresh_token": new_access_token})
+    return JSONResponse(status_code=HTTPStatus.OK, content={"access_token": new_access_token})
 
 
 @router.delete("/logout/")
@@ -131,3 +135,24 @@ async def logout(authorize: AuthJWT = Depends(), auth_service: AuthService = Dep
     await auth_service.revoke_both_tokens(authorize)
 
     return JSONResponse(status_code=HTTPStatus.OK, content={"result": "OK"})
+
+
+@router.get(
+    path="/me/",
+    responses={
+        HTTPStatus.OK: {"model": FastAPISuccessResponse},
+        HTTPStatus.BAD_REQUEST: {"model": FastAPIErrorResponse},
+    },
+)
+async def check_me(
+    authorize: AuthJWT = Depends(),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> JSONResponse:
+    """Узнать зарегистрирован ли пользователь"""
+    await authorize.jwt_required()
+    current_user_id = await authorize.get_jwt_subject()
+    try:
+        await auth_service.is_registered(user_id=current_user_id)
+        return JSONResponse(status_code=HTTPStatus.OK, content={"result": "OK"})
+    except UserNotFound as exc:
+        return JSONResponse(status_code=HTTPStatus.NOT_FOUND, content={"detail": str(exc)})

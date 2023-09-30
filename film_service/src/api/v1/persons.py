@@ -9,12 +9,14 @@ from db.exceptions import PersonNotFoundException
 from models.controller_exceptions import PersonNotFound
 from models.models import LimitOffset, MovieInfo, Person, PersonInfo
 from services.person_service import PersonService, get_person_service
+from services.auth_service import security_jwt
 
 router = APIRouter()
 
 
 @router.get(path="/search/")
 async def search(
+    user: Annotated[dict, Depends(security_jwt)],
     limit_offset: Annotated[LimitOffset, Depends(LimitOffset)],
     query: str = Query(min_length=1, description="ФИО персоны"),
     person_service: PersonService = Depends(get_person_service),
@@ -29,7 +31,11 @@ async def search(
     response_model_by_alias=False,
     responses={HTTPStatus.NOT_FOUND: {"model": PersonNotFound}},
 )
-async def person_details(person_id: UUID, person_service: PersonService = Depends(get_person_service)) -> PersonInfo:
+async def person_details(
+    user: Annotated[dict, Depends(security_jwt)],
+    person_id: UUID,
+    person_service: PersonService = Depends(get_person_service)
+) -> PersonInfo:
     """Получить персону по идентификатору"""
     try:
         person = await person_service.get_person_by_id(id_=person_id)
@@ -44,6 +50,7 @@ async def person_details(person_id: UUID, person_service: PersonService = Depend
     response_model_by_alias=True,
 )
 async def films(
+    user: Annotated[dict, Depends(security_jwt)],
     person_id: UUID,
     limit_offset: Annotated[LimitOffset, Depends(LimitOffset)],
     person_service: PersonService = Depends(get_person_service),
@@ -58,6 +65,7 @@ async def films(
     response_model_by_alias=True,
 )
 async def persons(
+    user: Annotated[dict, Depends(security_jwt)],
     limit_offset: Annotated[LimitOffset, Depends(LimitOffset)],
     sort: str = Query(
         default="id",

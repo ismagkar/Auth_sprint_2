@@ -10,5 +10,3 @@ dev_up:
 dev_down:
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 
-create_admin:
-	docker-compose exec admin_service python manage.py createsuperuser

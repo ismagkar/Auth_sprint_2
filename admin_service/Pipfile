@@ -10,6 +10,7 @@ django-split-settings = "==1.2.0"
 psycopg2-binary = "==2.9.6"
 uwsgi = "==2.0.21"
 django-debug-toolbar = "==3.4.0"
+requests = "*"
 
 [dev-packages]
 pytest = "==6.2.5"

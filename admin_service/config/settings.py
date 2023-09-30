@@ -16,7 +16,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 
 DEBUG = os.environ.get("DEBUG", False) == "True"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(",")
+ALLOWED_HOSTS = ["127.0.0.1", "0.0.0.0" ,"localhost"]
 
 ROOT_URLCONF = "config.urls"
 
@@ -28,6 +28,10 @@ include(
     "components/middleware.py",
     "components/templates.py",
 )
+
+AUTHENTICATION_BACKENDS = ["movies.auth.CustomBackend",]
+
+AUTH_USER_MODEL = "movies.User"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -61,6 +65,8 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_API_LOGIN_URL = "http://auth_service:8080/api/v1/auth/sign_in/"
 
 LOGGING = {
     "version": 1,

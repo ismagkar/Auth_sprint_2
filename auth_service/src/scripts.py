@@ -4,6 +4,7 @@ from functools import wraps
 
 import typer
 from sqlalchemy import select
+from werkzeug.security import generate_password_hash
 
 from db.postgres import async_database_session
 from models.entities import Role, RoleName, User
@@ -22,10 +23,15 @@ def typer_async(f):
 
 
 @typer_async
-async def create_admin(email: str = "admin@mail.ru", password: str = "Password123") -> None:
+async def create_admin(
+    email: str = "admin@mail.ru",
+    password: str = "Password123",
+    first_name: str = "Sirius",
+    second_name: str = "Black"
+) -> None:
     async with async_database_session() as session:
         admin_role = (await session.execute(select(Role).where(Role.name == RoleName.ADMIN))).scalar()
-        user = User(email=email, password=password, roles=[admin_role])
+        user = User(email=email, password=generate_password_hash(password), roles=[admin_role], first_name=first_name, second_name=second_name)
         session.add(user)
         try:
             await session.commit()

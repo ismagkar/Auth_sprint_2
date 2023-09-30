@@ -4,7 +4,7 @@ import datetime
 import enum
 import uuid
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, desc, func
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, desc, func, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -32,6 +32,9 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, nullable=False, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=True)
+    first_name: Mapped[str] = mapped_column(String(255))
+    second_name: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(Boolean, unique=False, default=True)
 
     roles: Mapped[list["Role"]] = relationship(
         secondary=users_roles_table, back_populates="users", lazy="selectin", order_by=lambda: desc(Role.id)
@@ -48,6 +51,9 @@ class User(Base):
             "id": str(self.id),
             "email": self.email,
             "roles": [role.as_dict() for role in self.roles],
+            "first_name": self.first_name,
+            "second_name": self.second_name,
+            "is_active": self.is_active
         }
 
 
