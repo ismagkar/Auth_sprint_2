@@ -130,11 +130,16 @@ class AuthService:
 def get_role_repository(session=Depends(get_async_session)) -> RoleRepository:
     return RoleRepository(session)
 
+@lru_cache()
+def get_social_repository(session=Depends(get_async_session)) -> SocialRepository:
+    return SocialRepository(session)
+
 
 @lru_cache()
 def get_auth_service(
     user_repository: UserRepository = Depends(get_user_repository),
     role_repossitory: RoleRepository = Depends(get_role_repository),
+    social_repository: SocialRepository = Depends(get_social_repository),
     redis: Redis = Depends(get_redis),
 ) -> AuthService:
-    return AuthService(user_repository, role_repossitory, FakeEmailClient(), redis)
+    return AuthService(user_repository, social_repository, role_repossitory, FakeEmailClient(), redis)

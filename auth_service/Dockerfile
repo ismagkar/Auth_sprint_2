@@ -14,8 +14,8 @@ RUN pip install --upgrade pip \
     && pipenv install --system --deploy
 
 COPY src .
-COPY migrations /opt/migrations/
-COPY alembic.ini /opt/alembic.ini
+COPY src/db/migrations /opt/migrations/
+COPY src/db/alembic.ini /opt/alembic.ini
 
 EXPOSE 8080
 
