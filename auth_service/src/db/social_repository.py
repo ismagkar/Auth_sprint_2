@@ -17,7 +17,7 @@ class SocialRepository:
         self._async_session = async_session
 
     async def create(self, social_account: SocialAccount) -> SocialAccount:
-        self._async_session.add(SocialAccount)
+        self._async_session.add(social_account)
         try:
             await self._async_session.commit()
         except IntegrityError:

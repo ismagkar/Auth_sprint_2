@@ -1,8 +1,8 @@
 """init
 
-Revision ID: f52601837612
+Revision ID: edc6a3dc1382
 Revises: 
-Create Date: 2023-09-30 16:40:10.806136
+Create Date: 2023-09-30 18:33:12.966523
 
 """
 import uuid
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from models.entities import Role, RoleName
 
 # revision identifiers, used by Alembic.
-revision = 'f52601837612'
+revision = 'edc6a3dc1382'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -65,6 +65,7 @@ def upgrade() -> None:
             {"id": uuid.uuid4(), "name": RoleName.REGISTERED},
         ],
     )
+
     # ### end Alembic commands ###
 
 

@@ -45,6 +45,9 @@ class User(Base):
     user_history: Mapped[list["UserHistory"]] = relationship(
         back_populates="user", lazy="selectin", order_by=lambda: desc(UserHistory.id)
     )
+    social_account: Mapped[list["SocialAccount"]] = relationship(
+        back_populates="user", lazy="selectin", order_by=lambda: desc(SocialAccount.id)
+    )
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, email={self.email!r}, password={self.password!r})"

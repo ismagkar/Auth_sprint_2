@@ -34,12 +34,13 @@ async def root_page(request: Request):
     google_oatuh_url = request.url_for(
         'login_by_social', social_network=SocialNetwork.google.value)
 
+    print(yandex_oatuh_url, google_oatuh_url)
     return templates.TemplateResponse(
         'index.html',
         {
             'request': request,
-            'google_authorization_url': google_oatuh_url,
-            'yandex_authorization_url': yandex_oatuh_url,
+            'google_oatuh_url': google_oatuh_url,
+            'yandex_oatuh_url': yandex_oatuh_url,
         }
     )
 

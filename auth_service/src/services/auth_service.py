@@ -10,7 +10,7 @@ from redis.asyncio import Redis
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from core.jwt_config import setting_jwt
-from db.exceptions import UserNotFound
+from db.exceptions import UserNotFound, SocialAccountNotFound
 from db.postgres import get_async_session
 from db.redis import get_redis
 from db.role_repository import RoleRepository
@@ -76,11 +76,14 @@ class AuthService:
                 UserHistory(last_login_datetime=datetime.now(),
                             device=auth_data["device"]))
             await self._user_repo.update(user)
+        except UserNotFound:
+            user = await self.sign_up(email=email, password=secrets.token_urlsafe(8))
+
+        try:
             social_account = await self._social_repo.get_social_repo_by_user_id(
                 user.id)
             await self._social_repo.update(social_account)
-        except UserNotFound:
-            user = await self.sign_up(email=email, password=secrets.token_urlsafe(8))
+        except SocialAccountNotFound:
             await self._social_repo.create(
                     SocialAccount(
                         user_id=user.id,
@@ -88,6 +91,7 @@ class AuthService:
                         social_name=auth_profile['social_name']
                     )
             )
+
         return user
 
 
