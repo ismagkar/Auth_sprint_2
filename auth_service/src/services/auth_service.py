@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import datetime
 from functools import lru_cache
@@ -9,11 +10,13 @@ from redis.asyncio import Redis
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from core.jwt_config import setting_jwt
+from db.exceptions import UserNotFound
 from db.postgres import get_async_session
 from db.redis import get_redis
 from db.role_repository import RoleRepository
+from db.social_repository import SocialRepository
 from db.user_repository import UserRepository, get_user_repository
-from models.entities import Role, RoleName, User, UserHistory
+from models.entities import Role, RoleName, User, UserHistory, SocialAccount
 
 
 class FakeEmailClient:
@@ -32,11 +35,13 @@ class AuthService:
     def __init__(
         self,
         user_repo: UserRepository,
+        social_repo: SocialRepository,
         role_repository: RoleRepository,
         email_client: FakeEmailClient,
         redis: Redis,
     ) -> None:
         self._user_repo = user_repo
+        self._social_repo = social_repo
         self._role_repository = role_repository
         self._email_client = email_client
         self._redis = redis
@@ -62,6 +67,29 @@ class AuthService:
         user = await self._user_repo.update(user)
 
         return user
+
+    async def auth_by_social(self, auth_profile: dict[str, Any], auth_data: dict[str, Any]):
+        email = auth_profile.get('email', '')
+        try:
+            user = await self._user_repo.get_user_by_email(email=email)
+            user.user_history.append(
+                UserHistory(last_login_datetime=datetime.now(),
+                            device=auth_data["device"]))
+            await self._user_repo.update(user)
+            social_account = await self._social_repo.get_social_repo_by_user_id(
+                user.id)
+            await self._social_repo.update(social_account)
+        except UserNotFound:
+            user = await self.sign_up(email=email, password=secrets.token_urlsafe(8))
+            await self._social_repo.create(
+                    SocialAccount(
+                        user_id=user.id,
+                        social_id=auth_profile['social_id'],
+                        social_name=auth_profile['social_name']
+                    )
+            )
+        return user
+
 
     async def change_password(self, user_id: uuid.UUID, old_password: str, new_password: str) -> User:
         user = await self._user_repo.get_user_by_id(id_=user_id)

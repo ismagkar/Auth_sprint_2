@@ -28,3 +28,11 @@ class UserAlreadyExists(AlreadyExists):
 
 class RoleAlreadyExists(AlreadyExists):
     pass
+
+
+class SocialAccountAlreadyExists(AlreadyExists):
+    pass
+
+
+class SocialAccountNotFound(EntityNotFound):
+    pass

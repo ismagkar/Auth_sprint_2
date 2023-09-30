@@ -1,5 +1,4 @@
 from authlib.integrations.starlette_client import OAuth
-from pydantic import HttpUrl
 from pydantic_settings import BaseSettings
 from models.entities import SocialNetwork
 
