@@ -6,8 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.exceptions import SocialAccountAlreadyExists, UserNotFound, \
-    SocialAccountNotFound
+from db.exceptions import SocialAccountAlreadyExists, SocialAccountNotFound
 from db.postgres import get_async_session
 from models.entities import SocialAccount
 
