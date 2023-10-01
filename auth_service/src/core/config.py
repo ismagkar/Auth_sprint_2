@@ -35,8 +35,8 @@ class BaseConfig(BaseSettings):
     port: int = Field(env="AUTH_PORT", default="6000")
 
     middleware_secret_key: str = secrets.token_urlsafe(30)
-    allow_tracer: bool = False
-    allow_request_id: bool = False
+    allow_tracer: bool = True
+    allow_request_id: bool = True
 
     allow_limiter: bool = True
 
