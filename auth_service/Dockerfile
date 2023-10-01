@@ -7,15 +7,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GID=auth-service \
     UID=auth-service
 
-COPY Pipfile Pipfile.lock ./
+COPY pyproject.toml poetry.lock ./
 
 RUN pip install --upgrade pip \
-    && pip install pipenv==2023.6.2 \
-    && pipenv install --system --deploy
+    && pip install poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi
 
 COPY src .
-COPY src/db/migrations /opt/migrations/
-COPY src/db/alembic.ini /opt/alembic.ini
 
 EXPOSE 8080
 
