@@ -27,7 +27,7 @@ async def login_by_social(request: Request, social_network: SocialNetwork):
 
 
 @router.get('/', response_class=HTMLResponse)
-@limiter.limit('1/minute')
+@limiter.limit('10/second')
 async def root_page(request: Request):
 
     yandex_oatuh_url = request.url_for(

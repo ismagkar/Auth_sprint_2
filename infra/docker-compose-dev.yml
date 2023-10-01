@@ -1,0 +1,117 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:13.0-alpine
+    container_name: db
+    restart: always
+    user: ${POSTGRES_USER}
+    expose:
+      - "5432"
+    volumes:
+      - data_volume:/var/lib/postgresql/data/
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - vidim
+    ports:
+      - 5432:5432
+    env_file:
+      - .env
+
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis
+    restart: always
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - vidim
+    ports:
+      - 6379:6379
+
+  redis-commander:
+    container_name: redis-commander
+    hostname: redis-commander
+    image: ghcr.io/joeferner/redis-commander:latest
+    restart: always
+    environment:
+    - REDIS_HOSTS=local:redis:6379
+    networks:
+      - vidim
+    ports:
+    - "8081:8081"
+
+  jaeger-service:
+    container_name: 'jaeger'
+    image: jaegertracing/all-in-one:latest
+    networks:
+      - vidim
+    ports:
+      - "16686:16686"
+    depends_on:
+      - auth_service
+
+  nginx:
+    image: nginx:1.19.3
+    container_name: 'nginx'
+    restart: always
+    networks:
+      - vidim
+    ports:
+      - ${PUBLISHED_NGINX_PORT}:80
+      - ${PUBLISHED_NGINX_PORT_SECURED}:443
+    volumes:
+      - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./etc/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../static:/usr/share/nginx/html/static/
+    environment:
+      NGINX_SET_REAL_IP_FROM: "192.168.1.0/24"
+    depends_on:
+      - auth_service
+      - jaeger-service
+
+
+  auth_service:
+    build: ../auth_service/
+    container_name: 'auth_service'
+    restart: always
+    volumes:
+      - ../static:/opt/src/static
+      - ../templates/:/opt/src/templates
+#    healthcheck:
+#      test: curl -s ${DOCS_URL} >/dev/null || exit 1
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+    depends_on:
+      - db
+      - redis
+    networks:
+      - vidim
+    ports:
+      - ${PUBLISHED_UNICORN_PORT}:${INNER_UVICORN_PORT}
+    env_file:
+      - .env
+
+
+volumes:
+  data_volume:
+  redis_data:
+  static:
+
+networks:
+  vidim:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1450

@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   db:
     image: postgres:13.0-alpine
@@ -9,7 +10,7 @@ services:
     volumes:
       - data_volume:/var/lib/postgresql/data/
     env_file:
-      - environments/postgres.env
+      - ../environments/postgres.env
       - ${PG_LOCAL_ENV_FILE:-environments/noop.env}
     user: ${POSTGRES_USER:-postgres}
     healthcheck:
@@ -17,8 +18,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-    ports:
-      - 5432:5432
+
+  auth_service:
+    build:
+      context: ../auth_service
+    container_name: auth_service
+    restart: always
+    env_file:
+      - ../environments/redis.env
+      - ../environments/auth_service.env
+      - ../environments/db.env
+      - ${FAST_API_LOCAL_ENV_FILE:-environments/noop.env}
+    expose:
+      - "8080"
+    depends_on:
+      redis:
+        condition: service_started
 
   redis:
     image: redis:6.2-alpine
@@ -33,14 +48,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-    ports:
-      - 6379:6379
-
-#  auth_service:
-#    volumes:
-#      - ./auth_service/src:/opt/app/
-#    ports:
-#      - 8080:8080
 
 volumes:
   data_volume:
