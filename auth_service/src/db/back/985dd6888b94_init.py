@@ -10,7 +10,7 @@ import uuid
 import sqlalchemy as sa
 from alembic import op
 
-from src.models.entities import Role, RoleName
+from models.entities import Role, RoleName
 
 revision = "985dd6888b94"
 down_revision = None

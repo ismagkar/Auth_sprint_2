@@ -4,7 +4,7 @@ import datetime
 import enum
 import uuid
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, desc, func, Boolean
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, desc, func, Boolean, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -16,6 +16,12 @@ class RoleName(str, enum.Enum):
     ADMIN = "admin"
     REGISTERED = "registered"
     TEST = "test"
+
+
+class SocialNetwork(str, enum.Enum):
+    yandex = 'yandex'
+    google = 'google'
+    vk = 'vk'
 
 
 users_roles_table = Table(
@@ -41,6 +47,9 @@ class User(Base):
     )
     user_history: Mapped[list["UserHistory"]] = relationship(
         back_populates="user", lazy="selectin", order_by=lambda: desc(UserHistory.id)
+    )
+    social_account: Mapped[list["SocialAccount"]] = relationship(
+        back_populates="user", lazy="selectin", order_by=lambda: desc(SocialAccount.id)
     )
 
     def __repr__(self) -> str:
@@ -96,3 +105,20 @@ class UserHistory(Base):
             "last_login_datetime": str(self.last_login_datetime),
             "device": self.device,
         }
+
+
+class SocialAccount(Base):
+    __tablename__ = "social_account"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, nullable=False, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user: Mapped["User"] = relationship(back_populates="social_account")
+
+    social_id: Mapped[str] = mapped_column(String, nullable=False)
+    social_name: Mapped[str] = mapped_column(String, nullable=False)
+
+    __table_args__ = (UniqueConstraint('social_id', 'social_name', name='social_pk'), )
+
+    def __repr__(self):
+        return f'<SocialAccount {self.social_name}:{self.user_id}>'
+

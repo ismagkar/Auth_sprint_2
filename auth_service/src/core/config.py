@@ -1,5 +1,8 @@
-from pydantic import BaseSettings, Field
+import os
 
+from pydantic import Field
+from pydantic_settings import BaseSettings
+import secrets
 
 class RedisConfig(BaseSettings):
     host: str = Field(env="REDIS_HOST", default="0.0.0.0")
@@ -9,7 +12,7 @@ class RedisConfig(BaseSettings):
 
 class DBConfig(BaseSettings):
     name: str = Field(env="DB_NAME", default="cinema")
-    user: str = Field(env="DB_USER", default="postgres")
+    pg_user: str = Field(env="DB_USER", default="postgres")
     password: str = Field(env="DB_PASSWORD", default="password")
     host: str = Field(env="DB_HOST", default="0.0.0.0")
     port: int = Field(env="DB_PORT", default=5432)
@@ -17,13 +20,15 @@ class DBConfig(BaseSettings):
 
     @property
     def url(self) -> str:
-        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
+        return f"postgresql+asyncpg://{self.pg_user}:{self.password}@{self.host}:{self.port}/{self.name}"
 
 
 class BaseConfig(BaseSettings):
     project_name: str = Field(env="PROJECT_NAME", default="auth_service")
     host: str = Field(env="AUTH_HOST", default="0.0.0.0")
     port: int = Field(env="AUTH_PORT", default="6000")
+
+    middleware_secret_key: str = secrets.token_urlsafe(30)
 
     db: DBConfig = DBConfig()
     redis_db: RedisConfig = RedisConfig()
