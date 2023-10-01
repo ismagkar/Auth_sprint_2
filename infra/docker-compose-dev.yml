@@ -9,6 +9,7 @@ services:
       - "5432"
     volumes:
       - data_volume:/var/lib/postgresql/data/
+      - ../psql/movies_database.sql:/docker-entrypoint-initdb.d/movies_database.sql
     healthcheck:
       test: [ "CMD", "pg_isready" ]
       interval: 5s
@@ -80,7 +81,8 @@ services:
     depends_on:
       - auth_service
       - jaeger-service
-
+      - admin_service
+      - film_service
 
   auth_service:
     build: ../auth_service/
@@ -104,11 +106,76 @@ services:
     env_file:
       - .env
 
+  admin_service:
+    build: ../admin_service/
+    container_name: admin_service
+    volumes:
+      - static_volume:/opt/app/static/
+      - media_volume:/opt/app/media/
+    env_file:
+      - .env
+    networks:
+      - vidim
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  elasticsearch:
+    image: elasticsearch:8.6.2
+    container_name: elasticsearch
+    restart: always
+    volumes:
+      - elasticsearch_data:/opt/elasticsearch/data
+    networks:
+      - vidim
+    expose:
+      - "9200"
+    env_file:
+      - .env
+
+
+  etl-service:
+    build: ../psql_to_es/
+    container_name: etl-service
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - vidim
+    depends_on:
+      db:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+
+  film_service:
+    build:
+      context: ../film_service/
+      target: production
+    container_name: film_service
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - vidim
+    expose:
+      - "8888"
+    depends_on:
+      elasticsearch:
+        condition: service_started
+      redis:
+        condition: service_started
 
 volumes:
   data_volume:
   redis_data:
   static:
+  static_volume:
+  media_volume:
+  elasticsearch_data:
 
 networks:
   vidim:

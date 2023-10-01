@@ -2,11 +2,11 @@ from pydantic import BaseSettings, Field, RedisDsn
 
 
 class PgSettings(BaseSettings):
-    dbname: str = Field(env="DB_NAME")
-    user: str = Field(env="DB_USER")
-    password: str = Field(env="DB_PASSWORD")
-    host: str = Field(env="DB_HOST")
-    port: str = Field(env="DB_PORT")
+    dbname: str = Field(env="POSTGRES_DB")
+    user: str = Field(env="POSTGRES_USER")
+    password: str = Field(env="POSTGRES_PASSWORD")
+    host: str = Field(env="POSTGRES_HOST")
+    port: str = Field(env="POSTGRES_PORT")
     options: str = "-c search_path=content"
 
 
