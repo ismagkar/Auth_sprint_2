@@ -1,5 +1,6 @@
 import http
 import logging
+import uuid
 
 import requests
 from requests.exceptions import Timeout, TooManyRedirects, RequestException

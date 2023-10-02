@@ -1,12 +1,9 @@
-migrate:
-	cd auth_service && alembic upgrade head
-
 admin:
-	docker compose exec auth_service bash -c "python scripts.py"
+	cd infra && docker compose exec auth_service bash -c "python scripts.py"
 
-dev_up:
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+start:
+	cd infra && docker compose -f docker-compose-dev.yml up --build -d
 
-dev_down:
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+stop:
+	cd infra && docker compose -f docker-compose-dev.yml down -v
 

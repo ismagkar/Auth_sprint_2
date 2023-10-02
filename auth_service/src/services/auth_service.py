@@ -79,7 +79,7 @@ class AuthService:
                             device=auth_data["device"]))
             await self._user_repo.update(user)
         except UserNotFound:
-            user = await self.sign_up(email=email, password=secrets.token_urlsafe(8))
+            user = await self.sign_up(email=email, password=secrets.token_urlsafe(8), first_name='', second_name='')
 
         try:
             social_account = await self._social_repo.get_social_repo_by_user_id(
