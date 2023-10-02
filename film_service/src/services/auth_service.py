@@ -1,5 +1,6 @@
 import http
 import time
+import uuid
 from typing import Optional
 import logging
 import os
@@ -38,9 +39,12 @@ class JWTBearer(HTTPBearer):
             raise HTTPException(status_code=http.HTTPStatus.FORBIDDEN, detail='Invalid or expired token.')
 
         try:
-            headers = {'Authorization': f'Bearer {credentials.credentials}'}
+            headers = {
+                'Authorization': f'Bearer {credentials.credentials}',
+                'X-Request-Id': str(uuid.uuid4())
+            }
             async with aiohttp.ClientSession(headers=headers) as session:
-                async with session.get(url='http://localhost/api/v1/auth/me') as status:
+                async with session.get(url='http://auth_service:8080/api/v1/auth/me') as status:
                     response = await status.json()
                     status_code = status.status
                     if status_code != st.HTTP_200_OK:

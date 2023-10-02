@@ -15,8 +15,9 @@ class CustomBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None):
         url = settings.AUTH_API_LOGIN_URL
         payload = {"email": username, "password": password}
+        headers = {'X-Request-Id': str(uuid.uuid4())}
         try:
-            response = requests.post(url, params=payload)
+            response = requests.post(url, headers=headers, params=payload)
         except (TooManyRedirects, RequestException, Timeout):
             logging.error('auth_server error')
             return None
