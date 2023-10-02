@@ -4,6 +4,7 @@ from functools import wraps
 
 import typer
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash
 
 from db.postgres import async_database_session
@@ -36,7 +37,7 @@ async def create_admin(
         try:
             await session.commit()
             logger.info(f"Администратор успешно добавлен: email={email}; пароль={password}")
-        except Exception:
+        except SQLAlchemyError:
             logger.exception("Ошибка добавления администратора")
 
 

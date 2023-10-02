@@ -96,7 +96,6 @@ class AuthService:
 
         return user
 
-
     async def change_password(self, user_id: uuid.UUID, old_password: str, new_password: str) -> User:
         user = await self._user_repo.get_user_by_id(id_=user_id)
         if not check_password_hash(user.password, old_password):
@@ -119,8 +118,6 @@ class AuthService:
             subject=user_id, user_claims={"access_jti": access_jti, "roles": roles}
         )
 
-        # await authorize.set_access_cookies(access_token)
-        # await authorize.set_refresh_cookies(refresh_token)
 
         return access_token, refresh_token
 
@@ -129,7 +126,6 @@ class AuthService:
         access_jti = (await authorize.get_raw_jwt())["access_jti"]
         await self._redis.setex(access_jti, setting_jwt.access_expires, "true")
         await self._redis.setex(refresh_jti, setting_jwt.refresh_expires, "true")
-        # await authorize.unset_jwt_cookies()
 
     async def is_registered(self, user_id: str) -> User:
         user = await self._user_repo.get_user_by_id(uuid.UUID(user_id))

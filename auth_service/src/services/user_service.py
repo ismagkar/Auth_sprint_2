@@ -14,7 +14,7 @@ class UserService:
         self._user_repo = user_repo
         self._role_repo = role_repo
 
-    async def bind(self, user_id: uuid.UUID, role_ids: list[uuid.UUID]) -> None:
+    async def bind(self, user_id: uuid.UUID, role_ids: list[uuid.UUID]) -> User:
         user = await self._user_repo.get_user_by_id(user_id)
         roles = await self._role_repo.get_roles_by_ids(role_ids)
 

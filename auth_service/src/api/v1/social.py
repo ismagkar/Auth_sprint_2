@@ -19,6 +19,12 @@ templates = Jinja2Templates(directory='templates')
 @router.get('/login/{social_network}')
 @limiter.limit('10/second')
 async def login_by_social(request: Request, social_network: SocialNetwork):
+    """Вход через соц. сети с явно переданным идентификатор соц. сети
+
+        Args:
+            request: объект запроса, нужен для выполнения редиректа на точку авторизации
+            social_network: тип соц. сети, доступные значения ['yandex','google']
+    """
     client = oauth.create_client(social_network.value)
     redirect_uri = request.url_for(
         'auth_by_social_network', social_network=social_network.value
@@ -29,7 +35,11 @@ async def login_by_social(request: Request, social_network: SocialNetwork):
 @router.get('/', response_class=HTMLResponse)
 @limiter.limit('10/second')
 async def root_page(request: Request):
+    """Вход через соц. сети
 
+        Args:
+            request: объект запроса, нужен для выполнения редиректа на точку авторизации
+    """
     yandex_oatuh_url = request.url_for(
         'login_by_social', social_network=SocialNetwork.yandex.value
     )
@@ -55,6 +65,12 @@ async def auth_by_social_network(
         user_agent: str = Header(None, include_in_schema=False),
         authorize: AuthJWT = Depends(),
 ):
+    """Авторизация пользователя в сервисе auth
+
+            Args:
+                request: объект запроса
+                social_network: тип соц. сети, доступные значения ['yandex','google']
+        """
     client = oauth.create_client(social_network.value)
     token = await client.authorize_access_token(request)
     resp = await client.get('info', token=token)
